@@ -314,6 +314,37 @@
     }
     #confirmation .close-btn:hover { background: var(--green-mid); }
 
+    /* ─────────── LOADING OVERLAY ─────────── */
+    #loading {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      background: rgba(245,240,232,0.88);
+      backdrop-filter: blur(8px);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.2rem;
+    }
+    #loading.show { display: flex; }
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid rgba(90,127,93,0.2);
+      border-top-color: var(--green-mid);
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text {
+      font-family: "Cormorant Garamond", serif;
+      font-style: italic;
+      font-size: 1.1rem;
+      color: var(--green-mid);
+      letter-spacing: 0.05em;
+    }
+
     /* ─────────── CONFETTI CANVAS ─────────── */
     #confetti-canvas {
       position: fixed;
@@ -359,6 +390,12 @@
 
 <!-- ── CONFETTI CANVAS ── -->
 <canvas id="confetti-canvas"></canvas>
+
+<!-- ── LOADING OVERLAY ── -->
+<div id="loading">
+  <div class="spinner"></div>
+  <p class="loading-text">Sending your RSVP…</p>
+</div>
 
 <!-- ── CONFIRMATION OVERLAY ── -->
 <div id="confirmation">
@@ -655,7 +692,10 @@
      ─────────────────────────────────────────────────────────────────────── */
   const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx5ZwO0VUjVMfBPtIvAJbPo6K3lvSgG_rmGM-PRLi9fihY_tt7S0e_5ZP37cB8Dzveo/exec';
 
+  let submitting = false;
+
   async function handleSubmit() {
+    if (submitting) return;
     const name  = document.getElementById('name').value.trim();
     const phone = document.getElementById('phone').value.trim();
 
@@ -664,9 +704,10 @@
       return;
     }
 
+    submitting = true;
     const btn = document.querySelector('.submit-btn');
-    btn.textContent = 'Sending…';
     btn.disabled = true;
+    showLoading(true);
 
     try {
       if (APPS_SCRIPT_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
@@ -680,14 +721,26 @@
           body: formData
         });
       }
-      // Show confirmation regardless (no-cors hides response; treat as success)
+      showLoading(false);
       showConfirmation();
     } catch (err) {
       console.error(err);
-      showConfirmation(); // Still celebrate — data may have saved
+      showLoading(false);
+      showConfirmation();
     } finally {
-      btn.textContent = 'Confirm My RSVP';
       btn.disabled = false;
+      submitting = false;
+    }
+  }
+
+  function showLoading(on) {
+    const el = document.getElementById('loading');
+    if (on) {
+      el.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    } else {
+      el.classList.remove('show');
+      document.body.style.overflow = '';
     }
   }
 
